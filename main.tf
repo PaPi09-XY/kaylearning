@@ -1,157 +1,120 @@
-# configured aws provider with proper credentials
 provider "aws" {
-  region     = "us-east-2"
-  profile    = "default"
+  region = "us-east-1"
+  profile = "kay"
 }
 
 
-# Create a VPC
+# create vpc
 
-resource "aws_vpc" "prodvpc" {
+resource "aws_vpc" "kayvpc" {
   cidr_block       = "10.0.0.0/16"
   instance_tenancy = "default"
   enable_dns_hostnames = true
 
   tags = {
-    Name = "production_vpc"
+    Name = "kayvpc"
   }
 }
+# create subnet
 
-# Create a Subnet
-
-resource "aws_subnet" "prodsubnet1" {
-  vpc_id            = aws_vpc.prodvpc.id
-  cidr_block        = "10.0.1.0/24"
-  availability_zone = "us-east-2a"
+resource "aws_subnet" "kaysub" {
+  vpc_id     = aws_vpc.kayvpc.id
+  cidr_block = "10.0.1.0/24"
+  availability_zone = "us-east-1b"
   map_public_ip_on_launch = true
   
-  tags = {
-    Name = "prod-subnet"
-  }
-}
-
-#Create the Internet Gateway and attach it to the VPC
-resource "aws_internet_gateway" "gw" {
-  vpc_id = aws_vpc.prodvpc.id
 
   tags = {
-    Name = "New"
+    Name = "learningsub"
   }
 }
+# create internet gateway
 
-# Create a Route Table
-resource "aws_route_table" "prodroute" {
-  vpc_id = aws_vpc.prodvpc.id
+resource "aws_internet_gateway" "kayigw" {
+  vpc_id = aws_vpc.kayvpc.id
+
+  tags = {
+    Name = "KIGW"
+  }
+}
+# create route table
+
+resource "aws_route_table" "kayrt" {
+  vpc_id = aws_vpc.kayvpc.id
 
   route {
     cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.gw.id
+    gateway_id = aws_internet_gateway.kayigw.id
   }
 
-  route {
-    ipv6_cidr_block = "::/0"
-    gateway_id      = aws_internet_gateway.gw.id
-  }
 
   tags = {
-    Name = "RT"
+    Name = "rt"
   }
 }
+# associate subnet to route table
 
-
-#Associate the subnet with the Route Table
 resource "aws_route_table_association" "a" {
-  subnet_id      = aws_subnet.prodsubnet1.id
-  route_table_id = aws_route_table.prodroute.id
+  subnet_id      = aws_subnet.kaysub.id
+  route_table_id = aws_route_table.kayrt.id
 }
 
-# Create a Security Group for the EC2 Instance
+# create SG
+
 resource "aws_security_group" "allow_web" {
   name        = "allow_web"
-  description = "Allow webserver inbound traffic"
-  vpc_id      = aws_vpc.prodvpc.id
+  description = "Allow TLS inbound traffic and all outbound traffic"
+  vpc_id      = aws_vpc.kayvpc.id
 
   ingress {
-    description = "Web Traffic from VPC"
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-
+    description = "HTTPS web traffice from vpc"
+    from_port        = 443
+    to_port          = 443
+    protocol         = "tcp"
+    cidr_blocks      = ["0.0.0.0/0"]
+   
   }
 
   ingress {
-    description = "SSH"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-
+    description = "HTTP inbound rule"
+    from_port        = 80
+    to_port          = 80
+    protocol         = "tcp"
+    cidr_blocks      = ["0.0.0.0/0"]
+   
   }
 
   ingress {
-    description = "HTTP"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-
+    description = "HTTP inbound rule"
+    from_port        = 8080
+    to_port          = 8080
+    protocol         = "tcp"
+    cidr_blocks      = ["0.0.0.0/0"]
+   
   }
-  ingress {
-    description = "HTTP"
-    from_port   = 8080
-    to_port     = 8080
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
 
+ingress {
+    description = "SSH inbound rule"
+    from_port        = 22
+    to_port          = 22
+    protocol         = "tcp"
+    cidr_blocks      = ["0.0.0.0/0"]
+   
   }
+
   egress {
     from_port        = 0
     to_port          = 0
-    protocol         = "-1" # Any ip address/ any protocol
+    protocol         = "-1"
     cidr_blocks      = ["0.0.0.0/0"]
-    ipv6_cidr_blocks = ["::/0"]
+    
   }
 
   tags = {
-    Name = "allow_tls"
+    Name = "allow_tls_SG"
   }
+
 }
-
-
-# Create the EC2 instance and assign key pair
-resource "aws_instance" "firstinstance" {
-  ami                    = data.aws_ami.ubuntu.id
-  instance_type          = "t2.micro"
-  vpc_security_group_ids = [aws_security_group.allow_web.id]
-  subnet_id              = aws_subnet.prodsubnet1.id
-  key_name               = "new_key_pair-ohio"
-  availability_zone      = "us-east-2a"
-  user_data              =  "${file("install_jenkins.sh")}"
-
-
-  tags = {
-    Name = "Jenkins_Server"
-  }
-}
-
-
-resource "aws_instance" "secondinstance" {
-  ami                    = data.aws_ami.ubuntu.id
-  instance_type          = "t2.micro"
-  vpc_security_group_ids = [aws_security_group.allow_web.id]
-  subnet_id              = aws_subnet.prodsubnet1.id
-  key_name               = "new_key_pair-ohio"
-  availability_zone      = "us-east-2a"
-  user_data              =  "${file("install_tomcat.sh")}"
-  
-
-
-  tags = {
-    Name = "Tomcat_Server"
-  }
-}
-
 
 # use data source to get a registered ubuntu ami
 data "aws_ami" "ubuntu" {
@@ -171,14 +134,56 @@ data "aws_ami" "ubuntu" {
   owners = ["099720109477"]
 }
 
+# create Ec2
+
+resource "aws_instance" "server1" {
+  ami           = data.aws_ami.ubuntu.id
+  instance_type = "t2.micro"
+  subnet_id = aws_subnet.kaysub.id
+  vpc_security_group_ids = [aws_security_group.allow_web.id]
+  availability_zone = "us-east-1b"
+  key_name = "kay2"
+  user_data = "${file("install_jenkins.sh")}"
+
+  tags = {
+    Name = "jenkins_server"
+  }
+
+}
+
+resource "aws_instance" "server2" {
+  ami           = data.aws_ami.ubuntu.id
+  instance_type = "t2.micro"
+  subnet_id = aws_subnet.kaysub.id
+  vpc_security_group_ids = [aws_security_group.allow_web.id]
+  availability_zone = "us-east-1b"
+  key_name = "kay2"
+  user_data = "${file("install_tomcat.sh")}"
+
+  tags = {
+    Name = "tomcat_server"
+  }
+
+}
+
 # print the url of the jenkins server
 output "Jenkins_website_url" {
-  value     = join ("", ["http://", aws_instance.firstinstance.public_ip, ":", "8080"])
-  description = "Jenkins Server is firstinstance"
+  value     = join ("", ["http://", aws_instance.server1.public_ip, ":", "8080"])
+  description = "Jenkins Server is server1"
 }
 
 # print the url of the tomcat server
 output "Tomcat_website_url1" {
-  value     = join ("", ["http://", aws_instance.secondinstance.public_ip, ":", "8080"])
-  description = "Tomcat Server is secondinstance"
+  value     = join ("", ["http://", aws_instance.server2.public_ip, ":", "8080"])
+  description = "Tomcat Server is server2"
 }
+
+#output "website-url" {
+ # value       = "${aws_instance.server1.*.public_ip}"
+  #description = "PublicIP address details"
+#}
+# aws_instance.ec2_instance_instance.public_dns
+
+
+
+
