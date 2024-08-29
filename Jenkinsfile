@@ -4,18 +4,18 @@ pipeline {
     stages {
         stage('Test') {
             steps {
-                sh 'cd Sampleweb mvn test'
+                sh 'cd SampleWebApp mvn test'
             }
         }
         stage('Build') {
             steps {
-                sh 'cd Sampleweb && mvn clean package'
+                sh 'cd SampleWebApp && mvn clean package'
             }
         }
         
         stage('Deploy to Tomcat') {
             steps {
-             deploy adapters: [tomcat9(credentialsId: 'tomcat9', path: '', url: 'http://34.228.194.54:8080/')], contextPath: 'webapp', war: '**/*.war'
+            deploy adapters: [tomcat9(credentialsId: 'tomcat9', path: '', url: 'http://34.228.194.54:8080')], contextPath: 'webapp', war: '**/*.war'
             }
         }
     }
