@@ -1,19 +1,28 @@
-#!bin/bash
+#!/bin/bash
 
-sudo apt update
-sudo apt install openjdk-11-jdk -y
-sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 5BA31D57EF5975CA
-wget -q -O - https://pkg.jenkins.io/debian-stable/jenkins.io.key | sudo apt-key add -
-sudo sh -c 'echo deb http://pkg.jenkins.io/debian-stable binary/ > /etc/apt/sources.list.d/jenkins.list'
-sudo apt install ca-certificates
-sudo apt update
-sudo apt install git -y
-sudo apt install maven -y
-sudo sh -c 'echo deb https://pkg.jenkins.io/debian-stable binary/ > /etc/apt/sources.list.d/jenkins.list'
-sudo apt update
-sudo apt install jenkins -y
+# Update package lists
 sudo apt-get update -y
-echo 'clearing screen...' && sleep 5
-clear
-echo 'jenkins is installed'
-echo 'this is the default password :' $(sudo cat /var/lib/jenkins/secrets/initialAdminPassword)
+
+# Install Java SDK 11
+sudo apt-get install openjdk-11-jdk -y
+
+# Download and install Jenkins
+curl -fsSL https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key | sudo tee \
+  /usr/share/keyrings/jenkins-keyring.asc > /dev/null
+
+echo deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] \
+  https://pkg.jenkins.io/debian-stable binary/ | sudo tee \
+  /etc/apt/sources.list.d/jenkins.list > /dev/null
+
+# Update package lists after adding Jenkins repo
+sudo apt-get update -y
+
+# Install Jenkins
+sudo apt-get install jenkins -y
+
+# Install Maven Build Tool
+sudo apt-get install maven -y
+
+# Start Jenkins and enable it to start on boot
+sudo systemctl enable jenkins
+sudo systemctl start jenkins
