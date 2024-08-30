@@ -4,12 +4,12 @@ pipeline {
     stages {
         stage('Test') {
             steps {
-                sh 'cd SampleWebApp && mvn test'
+                sh 'mvn test'
             }
         }
         stage('Build') {
             steps {
-                sh 'cd SampleWebApp && mvn clean package'
+                sh 'mvn clean package'
             }
         }
         stage('Deploy to Tomcat') {
@@ -20,7 +20,7 @@ pipeline {
                         path: '', 
                         url: 'http://18.215.158.79:8080/'
                     )
-                ], contextPath: 'webapp', war: '**/*.war'
+                ], contextPath: 'webapp', war: 'target/kaylearning.war'
             }
         }
     }
