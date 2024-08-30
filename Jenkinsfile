@@ -4,12 +4,12 @@ pipeline {
     stages {
         stage('Test') {
             steps {
-                sh 'mvn test'
+                sh 'cd SampleWebApp && mvn test'
             }
         }
         stage('Build') {
             steps {
-                sh 'mvn clean package'
+                sh 'cd SampleWebApp && mvn clean package'
             }
         }
         stage('Deploy to Tomcat') {
