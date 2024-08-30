@@ -14,13 +14,7 @@ pipeline {
         }
         stage('Deploy to Tomcat') {
             steps {
-                deploy adapters: [
-                    tomcat9(
-                        credentialsId: 'tomcat9', 
-                        path: '', 
-                        url: 'http://18.215.158.79:8080/'
-                    )
-                ], contextPath: 'webapp', war: 'target/kaylearning.war'
+                deploy adapters: [tomcat9(credentialsId: 'tomcat9', path: 'webapp', url: 'http://54.92.196.230:8080/')], contextPath: 'webapp', war: '**/*.war'
             }
         }
     }
